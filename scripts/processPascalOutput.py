@@ -44,7 +44,7 @@ def saveDummyModule(OUTPUTPATH:str) -> None:
     with open(OUTPUTPATH, 'w') as f:
         f.write(f'-1')
 def recordModulesFromPascalResult(result, OUTPUTPATH, sigGenesList, almostSigGenesList, sig4GenesList,
-                                             sig3GenesList, sig2GenesList):
+                                             sig3GenesList, sig2GenesList, study, trait, network):
     moduleIndexToSize = {}
     moduleIndexToModulePval = {}
     moduleIndexToCorrectedModulePval = {}
@@ -78,10 +78,11 @@ def recordModulesFromPascalResult(result, OUTPUTPATH, sigGenesList, almostSigGen
         # assumes index of 2 represents bool indicating significance of the module
         if item[2]:
             moduleIndexToSigFlag[item[0]] = True
-            saveSignificantModules(OUTPUTPATH.replace(".txt", f"_{item[0]}.txt"), item[1])
+            sigModuleOutName = OUTPUTPATH.replace(".txt", f"_{item[0]}.txt")
+            saveSignificantModules(f"sig_{sigModuleOutName}", item[1])
         else:
             moduleIndexToSigFlag[item[0]] = False
-            saveDummyModule(os.path.join(os.path.dirname(OUTPUTPATH), "dummy.txt"))
+            saveDummyModule(os.path.join(os.path.dirname(OUTPUTPATH), f"dummy_{study}_{trait}_{network}_{item[0]}.txt"))
         moduleIndexToSize[item[0]] = moduleSizeCounter
         moduleIndexToModulePval[item[0]] = item[4]
         moduleIndexToCorrectedModulePval[item[0]] = item[3]
@@ -161,9 +162,9 @@ def main():
     # Parse the arguments
     args = parser.parse_args()
     
-    study = args.pascalOutputFile.split("_")[1]
-    trait = args.pascalOutputFile.split("_")[2]
-    network = args.pascalOutputFile.split("_")[3]
+    study = args.pascalOutputFile.split("_")[0]
+    trait = args.pascalOutputFile.split("_")[1]
+    network = args.pascalOutputFile.split("_")[2].replace(".txt", "")
     rpIndex = trait.split("-")[0]
     
     sigPvalThreshold = 0.05 / countLinesInTSVfile(args.geneScoreFilePath)
@@ -202,7 +203,7 @@ def main():
     print(sigModulesPath)
     print(args.outputPath)
     moduleToSize, moduleToPval, moduleToCorrectedPval, isModuleSig, sigGenesDict, sig1GenesDict, sig2GenesDict, sig3GenesDict, sig4GenesDict = recordModulesFromPascalResult(result, sigModulesPath, 
-                                                                                                          sigGenesList, sig1GenesList, sig2GenesList, sig3GenesList, sig4GenesList)
+                                                                                                          sigGenesList, sig1GenesList, sig2GenesList, sig3GenesList, sig4GenesList, study, trait, network)
     for moduleIndex in sigGenesDict.keys():
         summary_dict['study'].append(study)
         summary_dict['trait'].append(trait)
@@ -220,7 +221,7 @@ def main():
         summary_dict['sig4Genes'].append(sig4GenesDict[moduleIndex])
     
     df_summary = pd.DataFrame(summary_dict)
-    df_summary.to_csv(os.path.join(args.outputPath, f"master_summary_slice_{rpIndex}.csv"))
+    df_summary.to_csv(os.path.join(args.outputPath, f"master_summary_slice_{rpIndex}.csv"), index=False)
                     
 
     

@@ -75,7 +75,7 @@ process ProcessPascalOutput{
     path(geneScoreFilePascalInput) // used to decide number of tests
 
     output:
-    path("masterSummaryPiece/*")
+    path("masterSummaryPiece/master_summary_slice_*")
     path("significantModules/")
 
     """
@@ -112,12 +112,34 @@ process MergeORAsummaryAndMasterSummary{
     path(oraSummaryDir)
     path(masterSummaryPiece)
 
+    output:
+    path("mergedSummary/*")
+
     """
     python3 /app/scripts/mergeORAandSummary.py \
         ${oraSummaryDir} \
-        ${masterSummaryPiece} 
+        ${masterSummaryPiece} \
+        "mergedSummary/"
     """
 
+}
+
+process VerticalMergeMasterSummaryPieces{
+    container 'edkang0925/mea-m1'
+    publishDir "./masterSummaries/", mode: 'copy'
+
+
+    input:
+    path(mergedSummaryFiles)
+
+    output:
+    path("master_summary_*")
+
+    """
+    python3 /app/scripts/verticalMerge.py \
+        ${mergedSummaryFiles} 
+    """
+    
 }
 
 
@@ -128,6 +150,7 @@ workflow {
     pascalOut = RunPascal(preProcessedFiles[0]|flatten, preProcessedFiles[1]|flatten)
     processedPascalOutput = ProcessPascalOutput(pascalOut[0]|flatten, preProcessedFiles[0]|flatten)
     goAnalysisOut = GoAnalysis(processedPascalOutput[1]|flatten, preProcessedFiles[2]|flatten)
-    MergeORAsummaryAndMasterSummary(goAnalysisOut[0]|flatten, processedPascalOutput[0]|flatten)
+    horizontallyMergedOut = MergeORAsummaryAndMasterSummary(goAnalysisOut[0]|flatten, processedPascalOutput[0]|flatten)
+    VerticalMergeMasterSummaryPieces(horizontallyMergedOut.collect())
 
 }

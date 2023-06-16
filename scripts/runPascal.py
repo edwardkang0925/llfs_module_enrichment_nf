@@ -31,7 +31,7 @@ def main():
     Pscorer = pathway.chi2rank(Scorer, fuse=False)
     M = Pscorer.load_modules(args.moduleFile, ncol=0, fcol=1)
     RESULT = Pscorer.score(M)
-    fileName = os.path.basename(args.scoreFile).replace("tsv", "txt")
+    fileName = os.path.basename(args.scoreFile).replace("tsv", "txt").replace("GS_", "")
     f = open(os.path.join(args.outputPath, fileName), "w")
     for r in RESULT[0]:
         f.write(str(r)+"\n")
