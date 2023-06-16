@@ -1,157 +1,133 @@
-params.trait = 'BMI'
+params.geneColName = 'markname'
+params.pvalColName = 'meta_p'
+params.pvalFileName = "/app/data/pvals/cma/ABI.csv"
+params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
+params.pipeline = "cma"
+params.trait = "fhshdl"
+params.numRP = 2
 
 nextflow.enable.dsl=2
 
 process RandomPermutation {
-    container 'jungwooseok/mea_preprocess:1.0.1'
-    label "process_low"
+    container 'edkang0925/mea-m1'
 
     output:
-    path("outputs/preprocessed/pc_${params.trait}.csv")
-    path("outputs/preprocessed/vst_${params.trait}.RDS")
+    path("outputs/RP/*.csv")
 
     script:
     """
-    Rscript /project/scripts/preprocess.R --trait ${params.trait} --minBinWidth ${params.minBinWidth} \
-        --minCPM ${params.minCPM} --minPercentsExpressed ${params.minPercentsExpressed} \
-        --binFile "/project/data/bins.RDS"
+    python3 /app/scripts/randomPermutation.py ${params.pvalFileName} "outputs/RP/" ${params.geneColName} ${params.numRP}
     """
 }
 
-process PrepareRegression {
-    container './exon_latest.sif'
-    label "process_medium"
+process PreProcessForPascal{
+    container 'edkang0925/mea-m1'
 
     input:
-    path(pc)
-    path(vst)
+    path(geneScoreFile)
 
     output:
-    path("outputs/beforeRegression/${params.trait}/sliced/exonSlice_*.RDS")
-    path("outputs/beforeRegression/${params.trait}/phenotype_df_beforeRegression_${params.trait}.RDS")
-    path("outputs/beforeRegression/${params.trait}/combined_df_beforeRegression_${params.trait}.RDS")
+    path("pascalInput/GS_*")
+    path("pascalInput/Module_*")
+    path("pascalInput/GO_*")
 
     script:
     """
-    Rscript /project/scripts/prepareRegression.R --trait ${params.trait} --numSlice ${params.numSlice} \
-        --number_of_plates ${params.number_of_plates} --visitcode ${params.visitcode} \
-        --pcFilePath ${pc} --vstFilePath ${vst}
+    python3 /app/scripts/preProcessForPascal.py \
+        ${geneScoreFile} \
+        ${params.moduleFileDir} \
+        "pascalInput/" \
+        ${params.pipeline} \
+        ${params.trait} \
+        ${params.geneColName} \
+        ${params.pvalColName}
     """
+
 }
 
-process StepwiseRegression {
-    container './exon_latest.sif'
-    label "process_low"
+process RunPascal{
+    container 'acharyas/pascalx'
 
     input:
-    path(slicedBinCount)
-    path(phenotypeBeforeRegression)
-    path(combinedDF)
+    path(geneScoreFile)
+    path(moduleFile)
 
     output:
-    path("outputs/afterRegression/${params.trait}/sliced/*")
+    path("pascalOutput/*")
 
     script:
     """
-    Rscript /project/scripts/stepwise_regression_perbin.R \
-        --combined_df ${combinedDF} \
-        --exon_expression_path ${slicedBinCount} \
-        --output_directory "outputs/afterRegression/${params.trait}/sliced/"
+    python3 /app/scripts/runPascal.py \
+        ${geneScoreFile} \
+        ${moduleFile} \
+        "pascalOutput/" \
+        ${params.pipeline} \
+        ${params.trait}
+        
     """
 }
 
-process MergeResiduals {
-    container './exon_latest.sif'
-    label "process_medium"
-    publishDir "./", mode: 'copy'
+process ProcessPascalOutput{
+    container 'edkang0925/mea-m1'
 
     input:
-    path x
+    path(pascalOutputFile)
+    path(geneScoreFilePascalInput) // used to decide number of tests
 
     output:
-    path("outputs/afterRegression/${params.trait}/combined/residualExonExpression.RDS")
+    path("masterSummaryPiece/*")
+    path("significantModules/")
 
-    script:
     """
-    Rscript /project/scripts/combine_residuals.R \
-        --input_files "${x.join(',')}" \
-        --output_prefix "outputs/afterRegression/${params.trait}/combined/"
+    python3 /app/scripts/processPascalOutput.py \
+        ${pascalOutputFile} \
+        0.05 \
+        "masterSummaryPiece/" \
+        ${geneScoreFilePascalInput} \
+        "significantModules/"
     """
 }
 
-process PrepareConditionalGenesis {
-    container './exon_latest.sif'
-    label "process_medium"
+process GoAnalysis{
+    container 'edkang0925/webgestalt-m1'
 
     input:
-    path(mergedResidualsExpression)
+    path(sigModuleDir)
+    path(backGroundGenesDir)
 
     output:
-    path("outputs/conditionalGenesisInput/${params.trait}/conditionalSlice_*.RDS")
+    path("GO_summaries/")
 
-    script:
     """
-    Rscript /project/scripts/preprocessForConditional_all.R \
-        --trait ${params.trait} \
-        --numSlice ${params.numSlice} \
-        --pvalThreshold ${params.binLevelPval} \
-        --mergedResidualsPath ${mergedResidualsExpression} \
-        --outputDir "outputs/conditionalGenesisInput/${params.trait}/"
+    Rscript /app/scripts/ORA_cmd.R --sigModuleDir ${sigModuleDir} --backGroundGenesFile ${backGroundGenesDir} \
+        --summaryRoot "GO_summaries/" --reportRoot "GO_reports/"
+
     """
 }
 
-process RunConditionalGenesis {
-    container './exon_latest.sif'
-    label "process_low"
+process MergeORAsummaryAndMasterSummary{
+    container 'edkang0925/mea-m1'
 
     input:
-    path(conditionalGenesisInputSliceFile)
+    path(oraSummaryDir)
+    path(masterSummaryPiece)
 
-    output:
-    path("outputs/conditionalGenesisOutput/${params.trait}/conditionalGenesisResultSlice_*.RDS")
+    """
+    python3 /app/scripts/mergeORAandSummary.py \
+        ${oraSummaryDir} \
+        ${masterSummaryPiece} 
+    """
 
-    script:
-    """
-    Rscript /project/scripts/conditionalGenesis_chunk.R \
-        --trait ${params.trait} \
-        --exon.path ${conditionalGenesisInputSliceFile} \
-        --outputDir "outputs/conditionalGenesisOutput/${params.trait}/"
-    """
 }
 
-process MergeConditionalGenesis {
-    container './exon_latest.sif'
-    label "process_high"
-    publishDir "./", mode: 'copy'
-
-    input:
-    path x
-
-    output:
-    path("outputs/combinedConditionalGenesis/${params.trait}/comnbinedConditionalGenesis_${params.trait}.RDS")
-
-    script:
-    """
-    Rscript /project/scripts/combineConditionalGenesis.R \
-        --trait ${params.trait} \
-        --input_files ${x.join(',')} \
-        --outputFile "outputs/combinedConditionalGenesis/${params.trait}/comnbinedConditionalGenesis_${params.trait}.RDS"
-    """
-}
 
 
 workflow {
-    preprocessDataOut = PreprocessData()
-
-    prepareRegressionOut = PrepareRegression(preprocessDataOut[0], preprocessDataOut[1])
-
-    stepwiseRegressionOut =StepwiseRegression(prepareRegressionOut[0]|flatten, prepareRegressionOut[1], prepareRegressionOut[2])
-    // Collect StepwiseRegressionOut as MergeResiduals need all of the outputs in the dir
-    
-    mergeResidualsOut = MergeResiduals(stepwiseRegressionOut.collect())
-    prepareConditionalGenesisOut = PrepareConditionalGenesis(mergeResidualsOut[0])
-    runConditionalGenesisOut = RunConditionalGenesis(prepareConditionalGenesisOut[0]|flatten)
-    // Collect RunConditionalGenesisOut before merging them
-    mergeConditionalGenesisOut = MergeConditionalGenesis(runConditionalGenesisOut.collect())
+    // For each module file in the module directory, preprocess the data for pascal.
+    preProcessedFiles = PreProcessForPascal(RandomPermutation()|flatten)
+    pascalOut = RunPascal(preProcessedFiles[0]|flatten, preProcessedFiles[1]|flatten)
+    processedPascalOutput = ProcessPascalOutput(pascalOut[0]|flatten, preProcessedFiles[0]|flatten)
+    goAnalysisOut = GoAnalysis(processedPascalOutput[1]|flatten, preProcessedFiles[2]|flatten)
+    MergeORAsummaryAndMasterSummary(goAnalysisOut[0]|flatten, processedPascalOutput[0]|flatten)
 
 }
