@@ -1,12 +1,14 @@
+nextflow.enable.dsl=2
 params.geneColName = 'markname'
 params.pvalColName = 'meta_p'
-params.pvalFileName = "/app/data/pvals/cma/fhshdl.csv"
 params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
-params.pipeline = "cma"
-params.trait = "fhshdl"
-params.numRP = 50
+params.numRP = 1000
 
-nextflow.enable.dsl=2
+// FIX BELOW PARAMS BEFORE RUNNING IT.
+params.pvalFileName = "/app/data/pvals/cma/BMI.csv"
+params.pipeline = "cma"
+params.trait = "BMI"
+params.numTests = 145994
 
 process RandomPermutation {
     container 'mea_latest.sif'
@@ -94,7 +96,8 @@ process ProcessPascalOutput{
         0.05 \
         "masterSummaryPiece/" \
         ${geneScoreFilePascalInput} \
-        "significantModules/"
+        "significantModules/" \
+	${params.numTests}
     """
 }
 
