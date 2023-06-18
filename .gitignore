@@ -3,3 +3,4 @@ data/
 work/
 .nextflow*
 masterSummaries/
+GO_summaries/

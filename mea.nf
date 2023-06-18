@@ -2,7 +2,7 @@ nextflow.enable.dsl=2
 params.geneColName = 'markname'
 params.pvalColName = 'meta_p'
 params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
-params.numRP = 5
+params.numRP = 2
 // FIX BELOW PARAMS before running.
 params.pipeline = "cma"
 params.pvalFileName = "/app/data/pvals/cma/fhshdl.csv"
@@ -99,6 +99,7 @@ process ProcessPascalOutput{
 
 process GoAnalysis{
     container 'edkang0925/webgestalt-m1'
+    publishDir ".", pattern:"GO_summaries/GO_summaries_*", mode: 'copy' // copy ORA results
 
     input:
     path(masterSummarySlice)
@@ -106,15 +107,19 @@ process GoAnalysis{
     path(geneScoreFilePascalInput) // used to decide number of tests
     path(goFile)
 
+
     output:
     path(masterSummarySlice)
-    path("GO_summaries/")
+    path("GO_summaries/*")
     path(geneScoreFilePascalInput) // used to decide number of tests
     path(goFile)
 
+    script:
+    def oraSummaryDir = "GO_summaries/GO_summaries_${goFile.baseName.split('_')[2]}/"
     """
+
     Rscript /app/scripts/ORA_cmd.R --sigModuleDir ${sigModuleDir} --backGroundGenesFile ${goFile} \
-        --summaryRoot "GO_summaries/" --reportRoot "GO_reports/"
+        --summaryRoot "${oraSummaryDir}" --reportRoot "GO_reports/"
 
     """
 }

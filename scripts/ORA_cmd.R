@@ -43,6 +43,7 @@ if (!dir.exists(REPORTS_PATH)) {
 
 if (!dir.exists(SUMMARIES_PATH)) {
     dir.create(SUMMARIES_PATH, recursive=TRUE)
+    print("generated summary directory")
 }
 
 for(fileName in list.files(INPUT_PATH)){
