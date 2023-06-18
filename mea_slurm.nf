@@ -4,12 +4,13 @@ params.pvalFileName = "/app/data/pvals/cma/fhshdl.csv"
 params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
 params.pipeline = "cma"
 params.trait = "fhshdl"
-params.numRP = 5
+params.numRP = 50
 
 nextflow.enable.dsl=2
 
 process RandomPermutation {
-    container 'edkang0925/mea-m1'
+    container 'mea_latest.sif'
+    label "process_low"
 
     output:
     path("outputs/RP/*.csv")
@@ -21,7 +22,8 @@ process RandomPermutation {
 }
 
 process PreProcessForPascal{
-    container 'edkang0925/mea-m1'
+    container 'mea_latest.sif'
+    label "process_low"
 
     input:
     path(geneScoreFile)
@@ -46,7 +48,8 @@ process PreProcessForPascal{
 }
 
 process RunPascal{
-    container 'acharyas/pascalx'
+    container 'pascalx_latest.sif'
+    label "process_low"
 
     input:
     path(geneScoreFile)
@@ -71,7 +74,8 @@ process RunPascal{
 }
 
 process ProcessPascalOutput{
-    container 'edkang0925/mea-m1'
+    container 'mea_latest.sif'
+    label "process_low"
 
     input:
     path(pascalOutputFile)
@@ -95,7 +99,8 @@ process ProcessPascalOutput{
 }
 
 process GoAnalysis{
-    container 'edkang0925/webgestalt-m1'
+    container 'webgestalt_latest.sif'
+    label "process_low"
 
     input:
     path(masterSummarySlice)
@@ -117,8 +122,8 @@ process GoAnalysis{
 }
 
 process MergeORAsummaryAndMasterSummary{
-    container 'edkang0925/mea-m1'
-
+    container 'mea_latest.sif'
+    label "process_low"
     input:
     path(oraSummaryDir)
     path(masterSummaryPiece)
@@ -136,9 +141,9 @@ process MergeORAsummaryAndMasterSummary{
 }
 
 process VerticalMergeMasterSummaryPieces{
-    container 'edkang0925/mea-m1'
+    container 'mea_latest.sif'
     publishDir "./masterSummaries/", mode: 'copy'
-
+    label "process_medium"
     input:
     path(mergedSummaryFiles)
 
@@ -163,17 +168,3 @@ workflow {
     horizontallyMergedOut = MergeORAsummaryAndMasterSummary(goAnalysisOut[0]|flatten, goAnalysisOut[1]|flatten)
     VerticalMergeMasterSummaryPieces(horizontallyMergedOut.collect())
 }
-
-
-// workflow {
-
-//     main_ch = RandomPermutation()
-//              .flatten()
-//              .PreProcessForPascal()
-//              .RunPascal()
-//              .ProcessPascalOutput()
-//              .GoAnalysis()
-//              .MergeORAsummaryAndMasterSummary()
-    
-//     VerticalMergeMasterSummaryPieces(main_ch.collect())
-// }

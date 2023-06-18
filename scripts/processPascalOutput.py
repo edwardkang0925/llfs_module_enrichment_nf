@@ -78,8 +78,10 @@ def recordModulesFromPascalResult(result, OUTPUTPATH, sigGenesList, almostSigGen
         # assumes index of 2 represents bool indicating significance of the module
         if item[2]:
             moduleIndexToSigFlag[item[0]] = True
-            sigModuleOutName = OUTPUTPATH.replace(".txt", f"_{item[0]}.txt")
-            saveSignificantModules(f"sig_{sigModuleOutName}", item[1])
+            dir_out = os.path.dirname(OUTPUTPATH)
+            file_out = f"sig_{os.path.basename(OUTPUTPATH).replace('.txt', f'_{item[0]}.txt')}"
+            sigModuleOutName = os.path.join(dir_out, file_out)
+            saveSignificantModules(sigModuleOutName, item[1])
         else:
             moduleIndexToSigFlag[item[0]] = False
             saveDummyModule(os.path.join(os.path.dirname(OUTPUTPATH), f"dummy_{study}_{trait}_{network}_{item[0]}.txt"))
@@ -158,6 +160,7 @@ def main():
     parser.add_argument("outputPath", help="Path to the output directory.")
     parser.add_argument("geneScoreFilePath", help="Used to get total number of tests and extract significant genes at different levels.")
     parser.add_argument("significantModulesOutDir", help="Path to the output directory for significant modules.")
+    parser.add_argument("numTests", type=int, help="total number of genes before merging categories")
     
     # Parse the arguments
     args = parser.parse_args()
@@ -167,7 +170,7 @@ def main():
     network = args.pascalOutputFile.split("_")[2].replace(".txt", "")
     rpIndex = trait.split("-")[0]
     
-    sigPvalThreshold = 0.05 / countLinesInTSVfile(args.geneScoreFilePath)
+    sigPvalThreshold = 0.05 / args.numTests
     
     # Check if the output directory exists, if not create it
     if not os.path.exists(args.outputPath):

@@ -31,7 +31,6 @@ DATABASES=c("geneontology_Biological_Process")
 GENE_ID="genesymbol" # see options with listIdType()
 
 INPUT_PATH = file.path(opt$sigModuleDir)
-backgroundGenes = file.path(opt$backGroundGenesFile) # path to folder of background gene lists
 # reports are more in-depth than summaries - advisable to keep reports FALSE if not needed
 REPORTS_PATH= file.path(opt$reportRoot) # only used if GENERATE_REPORT=TRUE
 SUMMARIES_PATH=file.path(opt$summaryRoot) # will be created if does not exist
@@ -47,31 +46,36 @@ if (!dir.exists(SUMMARIES_PATH)) {
 }
 
 for(fileName in list.files(INPUT_PATH)){
-    name = result <- sub("^sig_(.*).txt$", "\\1", fileName) # get name of input file droping the first prefix.
-    tf_method = paste0(name, '_', METHOD)
     enrich_df <- NULL
-    tryCatch(
-        # perform enrichment analysis
-        enrich_df <- WebGestaltR(
-            enrichMethod = METHOD,
-            organism = "hsapiens",
-            enrichDatabase = DATABASE,
-            interestGeneFile = significantModule,
-            interestGeneType = GENE_ID,
-            referenceGeneFile = opt$backGroundGenesFile,
-            referenceGeneType = GENE_ID,
-            minNum = 10, # default 10
-            maxNum = 500, # default 500
-            reportNum = 20, # default 20
-            isOutput = GENERATE_REPORT,
-            outputDirectory = REPORTS_PATH,
-            projectName = tf_method
-        ),
-        error = function(e){
-            print(paste0("ERROR while running WebGestalt for ",tf_method))
-            enrich_df = NULL
-        }
-    )
+    name <- ""
+    if(grepl("sig_", fileName)){
+        name <- sub("^(sig_.*)\\.txt$", "\\1", fileName) 
+        tf_method = paste0(name, '_', METHOD)
+        tryCatch(
+            # perform enrichment analysis
+            enrich_df <- WebGestaltR(
+                enrichMethod = METHOD,
+                organism = "hsapiens",
+                enrichDatabase = DATABASE,
+                interestGeneFile = significantModule,
+                interestGeneType = GENE_ID,
+                referenceGeneFile = opt$backGroundGenesFile,
+                referenceGeneType = GENE_ID,
+                minNum = 10, # default 10
+                maxNum = 500, # default 500
+                reportNum = 20, # default 20
+                isOutput = GENERATE_REPORT,
+                outputDirectory = REPORTS_PATH,
+                projectName = tf_method
+            ),
+            error = function(e){
+                print(paste0("ERROR while running WebGestalt for ",tf_method))
+                enrich_df = NULL
+            }
+        )    
+    }else{
+        name <- sub("^(dummy_.*)\\.txt$", "\\1", fileName) 
+    }
     # save summary as a .csv file
     if (!is.null(enrich_df)) {
     # remove link column

@@ -24,14 +24,11 @@ def outputMergableORA_df(module_ora_file:str, study:str, trait:str, network:str,
     if "dummy" in module_ora_file:
         return pd.DataFrame({'study':[study], 'trait':[trait], 'network':[network], 'moduleIndex':[moduleIndex],
                              'geneontology_Biological_Process':["NA"], 'BPminCorrectedPval':["NA"],
-                              "MFminCorrectedPval":["NA"],
-                                'MFminFDREnrichmentRatio':["NA"], 'MFmaxEnrichmentRatio':["NA"]})
+                              "BPminFDREnrichmentRatio":["NA"], 'BPmaxEnrichmentRatio':["NA"]})
                              
     dict_ora = {'study':[], 'trait':[], 'network':[], 'moduleIndex':[],
                 'geneontology_Biological_Process':[], 'BPminCorrectedPval':[],
-                'BPminFDREnrichmentRatio':[], 'BPmaxEnrichmentRatio':[],
-                 "MFminCorrectedPval":[],
-                'MFminFDREnrichmentRatio':[], 'MFmaxEnrichmentRatio':[]}
+                'BPminFDREnrichmentRatio':[], 'BPmaxEnrichmentRatio':[]}
     GOtype = 'geneontology_Biological_Process'
     moduleIndex, GOcount, minPval, enrichmentRatio_minFDR, enrichmentRatio_max = countGOterms(module_ora_file)
     dict_ora['study'].append(study)
@@ -50,8 +47,8 @@ def main():
     # Create argument parser
     parser = argparse.ArgumentParser(description="merge horizontally summary + ora summary")
     # Add arguments to parser
-    parser.add_argument("oraResultsDir", help="path To Dir containing ORAResults")
     parser.add_argument("masterSummaryPiece", help="pathToSummaryResult")
+    parser.add_argument("oraResultsDir", help="path To Dir containing ORAResults")
     parser.add_argument("output_directory", help="path To save OutputMergedFile")
 
     # Parse the arguments
@@ -66,6 +63,8 @@ def main():
         
     ora_dfs = []
     for file in os.listdir(args.oraResultsDir):
+        file = os.path.join(args.oraResultsDir, file)
+        print(file)
         study, trait, network, moduleIndex = os.path.basename(file).split(".")[0].split("_")[1:5]
         df_ora = outputMergableORA_df(file, study, trait, network, moduleIndex)
         ora_dfs.append(df_ora)

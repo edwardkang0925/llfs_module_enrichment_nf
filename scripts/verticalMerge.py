@@ -18,7 +18,7 @@ if __name__ == "__main__":
                         help='paths to the CSV files to concatenate')
     args = parser.parse_args()
     print(args.file_paths)
-    suffix = args.file_paths[0].split("_")[1].split("-")[1]
+    suffix = args.file_paths[0].split("_")[1].split("-")[1] #1-fhshdl, 2-fhshdl -> fhshdl
     outputFileName = f"master_summary_{suffix}_RP.csv"
     # Call the concatenate_csv function with the provided file paths
     concatenate_csv(args.file_paths, outputFileName)

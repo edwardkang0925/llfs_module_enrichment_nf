@@ -1,30 +1,18 @@
 params.geneColName = 'markname'
 params.pvalColName = 'meta_p'
-params.pvalFileName = "/app/data/pvals/cma/fhshdl.csv"
+params.pvalFileName = "/app/data/pvals/cma/0-fhshdl.csv"
 params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
 params.pipeline = "cma"
 params.trait = "fhshdl"
 params.numRP = 5
+params.numTests = 178106
 
 nextflow.enable.dsl=2
 
-process RandomPermutation {
-    container 'edkang0925/mea-m1'
-
-    output:
-    path("outputs/RP/*.csv")
-
-    script:
-    """
-    python3 /app/scripts/randomPermutation.py ${params.pvalFileName} "outputs/RP/" ${params.geneColName} ${params.numRP}
-    """
-}
 
 process PreProcessForPascal{
     container 'edkang0925/mea-m1'
 
-    input:
-    path(geneScoreFile)
 
     output:
     path("pascalInput/GS_*")
@@ -34,7 +22,7 @@ process PreProcessForPascal{
     script:
     """
     python3 /app/scripts/preProcessForPascal.py \
-        ${geneScoreFile} \
+        ${params.pvalFileName} \
         ${params.moduleFileDir} \
         "pascalInput/" \
         ${params.pipeline} \
@@ -75,7 +63,7 @@ process ProcessPascalOutput{
 
     input:
     path(pascalOutputFile)
-    path(geneScoreFilePascalInput) // used to decide number of tests
+    path(geneScoreFilePascalInput)
     path(goFile)
 
     output:
@@ -90,7 +78,8 @@ process ProcessPascalOutput{
         0.05 \
         "masterSummaryPiece/" \
         ${geneScoreFilePascalInput} \
-        "significantModules/"
+        "significantModules/" \
+        ${params.numTests} 
     """
 }
 
@@ -156,7 +145,7 @@ process VerticalMergeMasterSummaryPieces{
 
 workflow {
     // For each module file in the module directory, preprocess the data for pascal.
-    preProcessedFiles = PreProcessForPascal(RandomPermutation()|flatten)
+    preProcessedFiles = PreProcessForPascal()
     pascalOut = RunPascal(preProcessedFiles[0]|flatten, preProcessedFiles[1]|flatten, preProcessedFiles[2]|flatten)
     processedPascalOutput = ProcessPascalOutput(pascalOut[0]|flatten, pascalOut[1]|flatten, pascalOut[2]|flatten)
     goAnalysisOut = GoAnalysis(processedPascalOutput[0]|flatten, processedPascalOutput[1]|flatten, processedPascalOutput[2]|flatten,processedPascalOutput[3]|flatten)
