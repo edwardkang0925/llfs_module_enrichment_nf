@@ -5,6 +5,7 @@ params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
 params.pipeline = "cma"
 params.trait = "fhshdl"
 params.numRP = 5
+params.numTests = 178106
 
 nextflow.enable.dsl=2
 
@@ -90,7 +91,8 @@ process ProcessPascalOutput{
         0.05 \
         "masterSummaryPiece/" \
         ${geneScoreFilePascalInput} \
-        "significantModules/"
+        "significantModules/" \
+        ${params.numTests} 
     """
 }
 

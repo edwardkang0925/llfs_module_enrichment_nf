@@ -27,7 +27,7 @@ parser <- add_option(parser, c("--reportRoot"), type="character",
 opt = parse_args(parser)
 print(opt$sigModuleDir)
 METHOD = "ORA" # ORA | GSEA | NTA
-DATABASES=c("geneontology_Biological_Process") 
+DATABASE="geneontology_Biological_Process"
 GENE_ID="genesymbol" # see options with listIdType()
 
 INPUT_PATH = file.path(opt$sigModuleDir)
@@ -49,7 +49,7 @@ for(fileName in list.files(INPUT_PATH)){
     enrich_df <- NULL
     name <- ""
     if(grepl("sig_", fileName)){
-        name <- sub("^(sig_.*)\\.txt$", "\\1", fileName) 
+        name <- sub("(sig_.*)\\.txt$", "\\1", fileName) 
         tf_method = paste0(name, '_', METHOD)
         tryCatch(
             # perform enrichment analysis
@@ -57,7 +57,7 @@ for(fileName in list.files(INPUT_PATH)){
                 enrichMethod = METHOD,
                 organism = "hsapiens",
                 enrichDatabase = DATABASE,
-                interestGeneFile = significantModule,
+                interestGeneFile = file.path(INPUT_PATH, fileName),
                 interestGeneType = GENE_ID,
                 referenceGeneFile = opt$backGroundGenesFile,
                 referenceGeneType = GENE_ID,
