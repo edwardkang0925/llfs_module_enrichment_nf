@@ -1,13 +1,14 @@
+nextflow.enable.dsl=2
 params.geneColName = 'markname'
 params.pvalColName = 'meta_p'
-params.pvalFileName = "/app/data/pvals/cma/fhshdl.csv"
 params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
-params.pipeline = "cma"
-params.trait = "fhshdl"
 params.numRP = 5
+// FIX BELOW PARAMS before running.
+params.pipeline = "cma"
+params.pvalFileName = "/app/data/pvals/cma/fhshdl.csv"
+params.trait = "fhshdl"
 params.numTests = 178106
 
-nextflow.enable.dsl=2
 
 process RandomPermutation {
     container 'edkang0925/mea-m1'
