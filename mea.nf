@@ -99,7 +99,7 @@ process ProcessPascalOutput{
 
 process GoAnalysis{
     container 'edkang0925/webgestalt-m1'
-    publishDir ".", pattern:"GO_summaries/GO_summaries_*", mode: 'copy' // copy ORA results
+    publishDir ".", pattern:"GO_summaries/${params.trait}/GO_summaries_*", mode: 'copy' // copy ORA results
 
     input:
     path(masterSummarySlice)
@@ -110,12 +110,12 @@ process GoAnalysis{
 
     output:
     path(masterSummarySlice)
-    path("GO_summaries/*")
+    path("GO_summaries/${params.trait}/*")
     path(geneScoreFilePascalInput) // used to decide number of tests
     path(goFile)
 
     script:
-    def oraSummaryDir = "GO_summaries/GO_summaries_${goFile.baseName.split('_')[2]}/"
+    def oraSummaryDir = "GO_summaries/${params.trait}/GO_summaries_${goFile.baseName.split('_')[2]}/"
     """
 
     Rscript /app/scripts/ORA_cmd.R --sigModuleDir ${sigModuleDir} --backGroundGenesFile ${goFile} \
