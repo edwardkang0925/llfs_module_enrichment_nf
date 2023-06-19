@@ -117,10 +117,8 @@ process GoAnalysis{
     script:
     def oraSummaryDir = "GO_summaries/${params.trait}/GO_summaries_${goFile.baseName.split('_')[2]}/"
     """
-
     Rscript /app/scripts/ORA_cmd.R --sigModuleDir ${sigModuleDir} --backGroundGenesFile ${goFile} \
         --summaryRoot "${oraSummaryDir}" --reportRoot "GO_reports/"
-
     """
 }
 
