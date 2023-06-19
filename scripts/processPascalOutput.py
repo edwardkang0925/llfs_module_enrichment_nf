@@ -84,7 +84,7 @@ def recordModulesFromPascalResult(result, OUTPUTPATH, sigGenesList, almostSigGen
             saveSignificantModules(sigModuleOutName, item[1])
         else:
             moduleIndexToSigFlag[item[0]] = False
-            saveDummyModule(os.path.join(os.path.dirname(OUTPUTPATH), f"dummy_{study}_{trait}_{network}_{item[0]}.txt"))
+            # saveDummyModule(os.path.join(os.path.dirname(OUTPUTPATH), f"dummy_{study}_{trait}_{network}_{item[0]}.txt"))
         moduleIndexToSize[item[0]] = moduleSizeCounter
         moduleIndexToModulePval[item[0]] = item[4]
         moduleIndexToCorrectedModulePval[item[0]] = item[3]

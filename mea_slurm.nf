@@ -2,7 +2,7 @@ nextflow.enable.dsl=2
 params.geneColName = 'markname'
 params.pvalColName = 'meta_p'
 params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
-params.numRP = 5
+params.numRP = 1000
 
 // FIX BELOW PARAMS BEFORE RUNNING IT -> Now, sbatch script takes "trait" and "numTests" then pass it here. 
 // pvalFilenName is made in the sbatch script, so it is REQUIRED that the gene score file's basename matches trait
@@ -89,7 +89,6 @@ process ProcessPascalOutput{
     output:
     path("masterSummaryPiece/master_summary_slice_*")
     path("significantModules/")
-    path(geneScoreFilePascalInput)
     path(goFile)
 
     """
@@ -111,13 +110,11 @@ process GoAnalysis{
     input:
     path(masterSummarySlice)
     path(sigModuleDir)
-    path(geneScoreFilePascalInput) // used to decide number of tests
     path(goFile)
 
     output:
     path(masterSummarySlice)
     path("GO_summaries/${params.trait}/GO_summaries_${goFile.baseName.split('_')[2]}_${goFile.baseName.split('_')[3]}/")
-    path(geneScoreFilePascalInput) // used to decide number of tests
     path(goFile)
 
     script:
@@ -135,6 +132,7 @@ process MergeORAsummaryAndMasterSummary{
     input:
     path(masterSummaryPiece)
     path(oraSummaryDir)
+    path(goFile)
 
     output:
     path("mergedSummary/*")
@@ -143,7 +141,8 @@ process MergeORAsummaryAndMasterSummary{
     python3 /app/scripts/mergeORAandSummary.py \
         ${masterSummaryPiece} \
         ${oraSummaryDir} \
-        "mergedSummary/"
+        "mergedSummary/" \
+        ${goFile}
     """
 
 }
@@ -172,7 +171,7 @@ workflow {
     preProcessedFiles = PreProcessForPascal(RandomPermutation()|flatten)
     pascalOut = RunPascal(preProcessedFiles[0]|flatten, preProcessedFiles[1]|flatten, preProcessedFiles[2]|flatten)
     processedPascalOutput = ProcessPascalOutput(pascalOut[0]|flatten, pascalOut[1]|flatten, pascalOut[2]|flatten)
-    goAnalysisOut = GoAnalysis(processedPascalOutput[0]|flatten, processedPascalOutput[1]|flatten, processedPascalOutput[2]|flatten,processedPascalOutput[3]|flatten)
-    horizontallyMergedOut = MergeORAsummaryAndMasterSummary(goAnalysisOut[0]|flatten, goAnalysisOut[1]|flatten)
+    goAnalysisOut = GoAnalysis(processedPascalOutput[0]|flatten, processedPascalOutput[1]|flatten, processedPascalOutput[2]|flatten)
+    horizontallyMergedOut = MergeORAsummaryAndMasterSummary(goAnalysisOut[0]|flatten, goAnalysisOut[1]|flatten, goAnalysisOut[2]|flatten)
     VerticalMergeMasterSummaryPieces(horizontallyMergedOut.collect())
 }
