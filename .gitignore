@@ -4,3 +4,4 @@ work/
 .nextflow*
 masterSummaries/
 GO_summaries/
+*.csv
