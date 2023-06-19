@@ -2,7 +2,7 @@ nextflow.enable.dsl=2
 params.geneColName = 'markname'
 params.pvalColName = 'meta_p'
 params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
-params.numRP = 2
+params.numRP = 3
 // FIX BELOW PARAMS before running.
 params.pipeline = "cma"
 params.pvalFileName = "/app/data/pvals/cma/fhshdl.csv"
@@ -12,13 +12,14 @@ params.numTests = 178106
 
 process RandomPermutation {
     container 'edkang0925/mea-m1'
+    publishDir ".", mode: 'copy'
 
     output:
-    path("outputs/RP/*.csv")
+    path("RPscores/${params.trait}/*.csv")
 
     script:
     """
-    python3 /app/scripts/randomPermutation.py ${params.pvalFileName} "outputs/RP/" ${params.geneColName} ${params.numRP}
+    python3 /app/scripts/randomPermutation.py ${params.pvalFileName} "RPscores/${params.trait}/" ${params.geneColName} ${params.numRP}
     """
 }
 
@@ -99,7 +100,7 @@ process ProcessPascalOutput{
 
 process GoAnalysis{
     container 'edkang0925/webgestalt-m1'
-    publishDir ".", pattern:"GO_summaries/${params.trait}/GO_summaries_*", mode: 'copy' // copy ORA results
+    publishDir ".", pattern:"GO_summaries/${params.trait}/*", mode: 'copy' // copy ORA results
 
     input:
     path(masterSummarySlice)
@@ -110,32 +111,34 @@ process GoAnalysis{
 
     output:
     path(masterSummarySlice)
-    path("GO_summaries/${params.trait}/*")
+    path("GO_summaries/${params.trait}/GO_summaries_${goFile.baseName.split('_')[2]}_${goFile.baseName.split('_')[3]}/")
     path(geneScoreFilePascalInput) // used to decide number of tests
     path(goFile)
 
     script:
-    def oraSummaryDir = "GO_summaries/${params.trait}/GO_summaries_${goFile.baseName.split('_')[2]}/"
+    def oraSummaryDir = "GO_summaries/${params.trait}/GO_summaries_${goFile.baseName.split('_')[2]}_${goFile.baseName.split('_')[3]}/"
     """
     Rscript /app/scripts/ORA_cmd.R --sigModuleDir ${sigModuleDir} --backGroundGenesFile ${goFile} \
         --summaryRoot "${oraSummaryDir}" --reportRoot "GO_reports/"
     """
+
 }
 
 process MergeORAsummaryAndMasterSummary{
     container 'edkang0925/mea-m1'
 
     input:
-    path(oraSummaryDir)
     path(masterSummaryPiece)
+    path(oraSummaryDir)
 
     output:
     path("mergedSummary/*")
 
+    script:
     """
     python3 /app/scripts/mergeORAandSummary.py \
-        ${oraSummaryDir} \
         ${masterSummaryPiece} \
+        ${oraSummaryDir} \
         "mergedSummary/"
     """
 
