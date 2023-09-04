@@ -1,8 +1,8 @@
 nextflow.enable.dsl=2
 params.geneColName = 'markname'
 params.pvalColName = 'meta_p'
-params.moduleFileDir = "/app/data/modules/cherryPickModules_noCoexpression/"
-params.numRP = 1000
+params.moduleFileDir = "/app/data/modules/cherryPickModules/"
+params.numRP = 10000
 
 // FIX BELOW PARAMS BEFORE RUNNING IT -> Now, sbatch script takes "trait" and "numTests" then pass it here. 
 // pvalFilenName is made in the sbatch script, so it is REQUIRED that the gene score file's basename matches trait
