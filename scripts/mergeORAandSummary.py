@@ -83,7 +83,7 @@ def main():
     df_ora_merged[['study', 'trait', 'network', 'moduleIndex']] = df_ora_merged[['study', 'trait', 'network', 'moduleIndex']].astype(str)
     df_merge = pd.merge(df_summary_piece, df_ora_merged, how='left', on=['study','trait','network', 'moduleIndex'])
     df_merge.fillna("NA", inplace=True)
-    mergedFileName = f"{study}_{trait}_{network}_merged.csv"
+    mergedFileName = f"{study}_{trait}_{network}.csv"
     df_merge.to_csv(os.path.join(args.output_directory, mergedFileName), index=False)
     
 

@@ -135,13 +135,13 @@ process MergeORAsummaryAndMasterSummary{
     path(goFile)
 
     output:
-    path("mergedSummary/*")
+    path("summary/*")
 
     """
     python3 /app/scripts/mergeORAandSummary.py \
         ${masterSummaryPiece} \
         ${oraSummaryDir} \
-        "mergedSummary/" \
+        "summary/" \
         ${goFile}
     """
 
