@@ -14,11 +14,15 @@ def concatenate_csv(file_paths, outputFileName):
 if __name__ == "__main__":
     # Argument parsing
     parser = argparse.ArgumentParser(description='Concatenate CSV files vertically.')
-    parser.add_argument('file_paths', metavar='N', type=str, nargs='+',
-                        help='paths to the CSV files to concatenate')
+    parser.add_argument('paths_file', type=str, help='File containing paths to the CSV files to concatenate')
     args = parser.parse_args()
-    print(args.file_paths)
-    suffix = args.file_paths[0].split("_")[1].split("-")[1] #1-fhshdl, 2-fhshdl -> fhshdl
+    
+    with open(args.paths_file, 'r') as f:
+        file_paths = f.read().strip().split("\n")
+
+    print(file_paths)
+    suffix = file_paths[0].split("_")[1].split("-")[1] #1-fhshdl, 2-fhshdl -> fhshdl
     outputFileName = f"master_summary_{suffix}_RP.csv"
-    # Call the concatenate_csv function with the provided file paths
-    concatenate_csv(args.file_paths, outputFileName)
+
+    # Call the concatenate_csv function with the read file paths
+    concatenate_csv(file_paths, outputFileName)

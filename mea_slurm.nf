@@ -147,21 +147,25 @@ process MergeORAsummaryAndMasterSummary{
 
 }
 
-process VerticalMergeMasterSummaryPieces{
+process VerticalMergeMasterSummaryPieces {
     container 'mea_latest.sif'
     publishDir "./masterSummaries/", mode: 'copy'
     label "process_medium"
+
     input:
     path(mergedSummaryFiles)
 
     output:
     path("master_summary_*")
 
+    script:
+    pathsFile = "merged_file_paths.txt"
+    def fileList = mergedSummaryFiles.collect { it.toString() }.join('\n')
+
     """
-    python3 /app/scripts/verticalMerge.py \
-        ${mergedSummaryFiles} 
+    echo '$fileList' > $pathsFile
+    python3 /app/scripts/verticalMerge.py $pathsFile
     """
-    
 }
 
 
