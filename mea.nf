@@ -142,7 +142,6 @@ process MergeORAsummaryAndMasterSummary{
     """
 
 }
-
 process VerticalMergeMasterSummaryPieces{
     container 'edkang0925/mea-m1'
     publishDir "./masterSummaries/", mode: 'copy'
@@ -151,18 +150,38 @@ process VerticalMergeMasterSummaryPieces{
     path(mergedSummaryFiles)
 
     output:
-    path("master_summary_*")
+    path("master_summary_*.csv")
 
     script:
-    pathsFile = "merged_file_paths.txt"
-    def fileList = mergedSummaryFiles.collect { it.toString() }.join('\n')
+    """
+    # Use the header from the first file
+    head -n 1 \$(echo ${mergedSummaryFiles[0]}) > master_summary_${params.trait}.csv
 
+    # Append the contents of each file excluding the header
+    for file in ${mergedSummaryFiles.join(' ')}; do
+        awk 'NR > 1' \$file >> master_summary_${params.trait}.csv
+    done
     """
-    echo '$fileList' > $pathsFile
-    python3 /app/scripts/verticalMerge.py $pathsFile
-    """
-    
 }
+
+// process VerticalMergeMasterSummaryPieces{
+//     container 'edkang0925/mea-m1'
+//     publishDir "./masterSummaries/", mode: 'copy'
+
+//     input:
+//     path(mergedSummaryFiles)
+
+//     output:
+//     path("master_summary_*")
+
+//     script:
+//     def filesToMerge = task.workDir.resolve("merged_file_paths.txt")
+//     file(filesToMerge).text = mergedSummaryFiles.collect { it.toString() }.join('\n')
+
+//     """
+//     python3 /app/scripts/verticalMerge.py $filesToMerge
+//     """
+// }
 
 
 
